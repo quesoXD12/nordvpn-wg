@@ -30,17 +30,25 @@ while [[ $# -gt 0 ]]; do
             SERVER="${2:-}"
             shift 2
             ;;
+        -o|--output)
+            OUTPUT_FILE="${2:-}"
+            shift 2
+            ;;
         -h|--help)
             echo "NordVPN WireGuard Config Generator (Gum Edition)"
             echo ""
-            echo "Usage: $0 [options] [output-file]"
+            echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
             echo "  -c, --country COUNTRY   Filter by country code or name"
             echo "  -s, --server SERVER     Use specific server (e.g., us9574)"
+            echo "  -o, --output FILE       Output file path (skips save location prompt)"
             echo "  -h, --help              Show this help message"
             echo ""
             echo "If no options provided, launches interactive mode."
+            echo ""
+            echo "Scripting (fully non-interactive):"
+            echo "  NORDVPN_ACCESS_TOKEN=xxx $0 -c us -o /etc/wireguard/us.conf"
             exit 0
             ;;
         -*)

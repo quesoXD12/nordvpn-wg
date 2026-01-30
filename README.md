@@ -89,9 +89,24 @@ nordvpn-wg -l
 | ---------------------- | --- | ----- | ----------------------------------------- |
 | `-c, --country`        | ✅  | ✅    | Filter by country code or name            |
 | `-s, --server`         | ✅  | ✅    | Use specific server (e.g., `us9574`)      |
+| `-o, --output`         | ✅  | ✅    | Output file path (skips save prompt)      |
 | `-i, --interactive`    | —   | ✅    | Interactive country picker (requires fzf) |
 | `-l, --list-countries` | —   | ✅    | List all available countries              |
 | `-h, --help`           | ✅  | ✅    | Show help                                 |
+
+### Scripting (Fully Non-Interactive)
+
+Both versions support fully non-interactive use for automation:
+
+```bash
+# Set token via environment variable
+export NORDVPN_ACCESS_TOKEN="your-token"
+
+# Generate config without any prompts
+nordvpn-wg -c us -o /etc/wireguard/us.conf
+nordvpn-wg-gum -c switzerland -o ./swiss.conf
+nordvpn-wg -s us9574 -o ~/vpn/specific-server.conf
+```
 
 ### Save Locations
 
