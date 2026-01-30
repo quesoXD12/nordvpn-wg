@@ -1,0 +1,5 @@
+# Generated configs
+*.conf
+
+# macOS
+.DS_Store
