@@ -6,6 +6,7 @@ Based on [this gist by bluewalk](https://gist.github.com/bluewalk/7b3db071c488c8
 
 ## Features
 
+- 🖥️ Beautiful TUI with interactive prompts
 - 🔐 Interactive token input (hidden) or environment variable
 - 🌍 Country selection by code (`us`), name (`switzerland`), or partial match (`switz`)
 - 🎯 Specific server selection (`us9574`)
@@ -20,18 +21,12 @@ Based on [this gist by bluewalk](https://gist.github.com/bluewalk/7b3db071c488c8
 
 ## Installation
 
-```bash
-# Download
-curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg
-chmod +x nordvpn-wg
+### TUI Version (Recommended)
 
-# Install system-wide (optional)
-sudo mv nordvpn-wg /usr/local/bin/
-```
+The TUI version uses [charmbracelet/gum](https://github.com/charmbracelet/gum) for a beautiful interactive experience.
 
-### Gum Edition (Optional)
-
-For a prettier TUI experience using [charmbracelet/gum](https://github.com/charmbracelet/gum):
+> [!NOTE]
+> Requires `gum`. If not installed, the script will offer to install it via `go install` (requires Go), or show manual installation instructions.
 
 ```bash
 curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg-gum
@@ -39,46 +34,72 @@ chmod +x nordvpn-wg-gum
 sudo mv nordvpn-wg-gum /usr/local/bin/
 ```
 
-## Usage
+### Plain Bash Version (No Dependencies)
 
-### Quick Start
+If you prefer no extra dependencies beyond `curl` and `jq`:
 
 ```bash
-# Set token (or skip to enter interactively)
-export NORDVPN_ACCESS_TOKEN="your-token-here"
+curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg
+chmod +x nordvpn-wg
+sudo mv nordvpn-wg /usr/local/bin/
+```
 
+> [!TIP]
+> Install [fzf](https://github.com/junegunn/fzf) for interactive country selection with `-i` flag.
+
+## Usage
+
+### TUI Version
+
+```bash
+# Interactive mode (prompts for everything)
+nordvpn-wg-gum
+
+# With country filter
+nordvpn-wg-gum -c switzerland
+
+# Specific server
+nordvpn-wg-gum -s us9574
+```
+
+### Plain Bash Version
+
+```bash
 # Best recommended server
 nordvpn-wg
 
-# Specific country
+# Country by code or name
 nordvpn-wg -c us
 nordvpn-wg -c switzerland
 nordvpn-wg -c "united kingdom"
 
+# Interactive country picker (requires fzf)
+nordvpn-wg -i
+
 # Specific server
 nordvpn-wg -s us9574
 
-# Interactive mode (gum version)
-nordvpn-wg-gum
+# List all countries
+nordvpn-wg -l
 ```
 
 ### Options
 
-| Flag                   | Description                                         |
-| ---------------------- | --------------------------------------------------- |
-| `-c, --country`        | Filter by country code or name                      |
-| `-s, --server`         | Use specific server (e.g., `us9574`)                |
-| `-i, --interactive`    | Interactive country picker (fzf, bash version only) |
-| `-l, --list-countries` | List all available countries                        |
-| `-h, --help`           | Show help                                           |
+| Flag                   | TUI | Plain | Description                               |
+| ---------------------- | --- | ----- | ----------------------------------------- |
+| `-c, --country`        | ✅  | ✅    | Filter by country code or name            |
+| `-s, --server`         | ✅  | ✅    | Use specific server (e.g., `us9574`)      |
+| `-i, --interactive`    | —   | ✅    | Interactive country picker (requires fzf) |
+| `-l, --list-countries` | —   | ✅    | List all available countries              |
+| `-h, --help`           | ✅  | ✅    | Show help                                 |
 
 ### Save Locations
 
 When prompted, you can save configs to:
 
-1. **Current directory** - `./server.nordvpn.conf`
-2. **/etc/wireguard/** - Enables `sudo wg-quick up servername` (just the name!)
-3. **Custom path** - Any path you specify
+1. **Current directory** — `./server.nordvpn.conf`
+2. **/etc/wireguard/** — Enables `sudo wg-quick up servername` (just the name!)
+3. **Custom path** — Any path you specify
 
 ## Connecting
 
@@ -116,6 +137,7 @@ Or just run the script and paste it when prompted (input is hidden).
 - Tokens are never passed as command-line arguments (visible in `ps`)
 - Interactive input uses `read -s` (hidden)
 - Generated configs have `chmod 600` permissions
+- User input is sanitized before use in URLs and queries
 - Private keys are fetched directly from NordVPN's API
 
 ## License
