@@ -63,6 +63,11 @@ for cmd in curl jq; do
     fi
 done
 
+# Sanitize input for use in URLs (remove dangerous characters)
+sanitize_url_param() {
+    echo "$1" | tr -cd 'a-zA-Z0-9._-'
+}
+
 # Check for gum
 check_gum() {
     if command -v gum &> /dev/null; then
@@ -178,8 +183,8 @@ if [[ -z "${NORDVPN_ACCESS_TOKEN:-}" ]]; then
 fi
 
 # Step 1: Get private key
-PRIVATE_KEY=$(gum spin --spinner dot --title "Fetching WireGuard private key..." -- \
-    bash -c "curl -sf -u 'token:${NORDVPN_ACCESS_TOKEN}' 'https://api.nordvpn.com/v1/users/services/credentials' | jq -r '.nordlynx_private_key'")
+PRIVATE_KEY=$(curl -sf -u "token:${NORDVPN_ACCESS_TOKEN}" \
+    'https://api.nordvpn.com/v1/users/services/credentials' | jq -r '.nordlynx_private_key')
 
 if [[ -z "$PRIVATE_KEY" || "$PRIVATE_KEY" == "null" ]]; then
     error "Failed to retrieve private key. Check your access token."
@@ -233,7 +238,7 @@ fi
 info "Finding WireGuard server..."
 
 if [[ -n "$SERVER" ]]; then
-    SERVER_NAME="${SERVER%.nordvpn.com}"
+    SERVER_NAME=$(sanitize_url_param "${SERVER%.nordvpn.com}")
     info "Looking for server: $SERVER_NAME"
     
     SERVER_INFO=$(curl -sfg \
@@ -249,12 +254,15 @@ elif [[ -n "$COUNTRY" ]]; then
     
     COUNTRIES_JSON=$(curl -sf "https://api.nordvpn.com/v1/servers/countries")
     
+    # Sanitize country input for jq
+    COUNTRY_SAFE=$(echo "$COUNTRY_LOWER" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    
     # Try matching by code first
-    COUNTRY_ID=$(echo "$COUNTRIES_JSON" | jq -r ".[] | select(.code | ascii_downcase == \"${COUNTRY_LOWER}\") | .id")
+    COUNTRY_ID=$(echo "$COUNTRIES_JSON" | jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.code | ascii_downcase == $c) | .id')
     
     if [[ -z "$COUNTRY_ID" ]]; then
         # Try by name
-        MATCHING=$(echo "$COUNTRIES_JSON" | jq -r ".[] | select(.name | ascii_downcase | contains(\"${COUNTRY_LOWER}\"))")
+        MATCHING=$(echo "$COUNTRIES_JSON" | jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.name | ascii_downcase | contains($c))')
         MATCH_COUNT=$(echo "$MATCHING" | jq -s 'length')
         
         if [[ "$MATCH_COUNT" -eq 0 ]]; then
@@ -263,7 +271,7 @@ elif [[ -n "$COUNTRY" ]]; then
         elif [[ "$MATCH_COUNT" -gt 1 ]]; then
             gum style --foreground 214 "Multiple countries match '$COUNTRY':"
             echo ""
-            echo "$COUNTRIES_JSON" | jq -r ".[] | select(.name | ascii_downcase | contains(\"${COUNTRY_LOWER}\")) | \"  \(.code | ascii_downcase)  \(.name)\""
+            echo "$COUNTRIES_JSON" | jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.name | ascii_downcase | contains($c)) | "  \(.code | ascii_downcase)  \(.name)"'
             echo ""
             gum style --faint "Please be more specific or use the 2-letter code."
             exit 1

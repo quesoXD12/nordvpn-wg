@@ -34,6 +34,11 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
+# Sanitize input for use in URLs (remove dangerous characters)
+sanitize_url_param() {
+    echo "$1" | tr -cd 'a-zA-Z0-9._-'
+}
+
 # Default values
 OUTPUT_FILE=""
 COUNTRY=""
@@ -231,7 +236,7 @@ echo -e "${YELLOW}[2/3]${NC} Finding WireGuard server..."
 if [[ -n "$SERVER" ]]; then
     # Specific server requested
     # Clean up server name (remove .nordvpn.com if present)
-    SERVER_NAME="${SERVER%.nordvpn.com}"
+    SERVER_NAME=$(sanitize_url_param "${SERVER%.nordvpn.com}")
     
     echo -e "    Looking for server: ${CYAN}${SERVER_NAME}${NC}"
     
@@ -255,14 +260,17 @@ elif [[ -n "$COUNTRY" ]]; then
     # Fetch countries list once
     COUNTRIES_JSON=$(curl -sf "https://api.nordvpn.com/v1/servers/countries")
     
+    # Sanitize country input for jq (escape quotes and backslashes)
+    COUNTRY_SAFE=$(echo "$COUNTRY_LOWER" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    
     # Try matching by code first, then by name (partial match)
     COUNTRY_ID=$(echo "$COUNTRIES_JSON" | \
-        jq -r ".[] | select(.code | ascii_downcase == \"${COUNTRY_LOWER}\") | .id")
+        jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.code | ascii_downcase == $c) | .id')
     
     if [[ -z "$COUNTRY_ID" ]]; then
         # Try matching by country name (case-insensitive, partial match)
         MATCHING_COUNTRIES=$(echo "$COUNTRIES_JSON" | \
-            jq -r ".[] | select(.name | ascii_downcase | contains(\"${COUNTRY_LOWER}\")) | \"\(.code | ascii_downcase)\t\(.name)\"")
+            jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.name | ascii_downcase | contains($c)) | "\(.code | ascii_downcase)\t\(.name)"')
         
         if [[ -z "$MATCHING_COUNTRIES" ]]; then
             MATCH_COUNT=0
@@ -291,7 +299,7 @@ elif [[ -n "$COUNTRY" ]]; then
         
         # Single match - extract the ID
         COUNTRY_ID=$(echo "$COUNTRIES_JSON" | \
-            jq -r ".[] | select(.name | ascii_downcase | contains(\"${COUNTRY_LOWER}\")) | .id")
+            jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.name | ascii_downcase | contains($c)) | .id')
     fi
     
     COUNTRY_NAME=$(echo "$COUNTRIES_JSON" | \
