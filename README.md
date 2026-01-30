@@ -2,6 +2,8 @@
 
 Generate WireGuard configs for NordVPN using their API. No app required.
 
+Based on [this gist by bluewalk](https://gist.github.com/bluewalk/7b3db071c488c82c604baf76a42eaad3).
+
 ## Features
 
 - 🔐 Interactive token input (hidden) or environment variable
