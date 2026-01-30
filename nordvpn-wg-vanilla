@@ -424,15 +424,3 @@ else
 fi
 
 echo -e "${GREEN}  ✓ Config written to: ${OUTPUT_FILE}${NC}"
-
-# Show wg-quick commands
-if [[ "$OUTPUT_FILE" == /etc/wireguard/* ]]; then
-    CONFIG_NAME=$(basename "$OUTPUT_FILE" .conf)
-    echo ""
-    echo -e "${CYAN}Connect:${NC} sudo wg-quick up $CONFIG_NAME"
-    echo -e "${CYAN}Disconnect:${NC} sudo wg-quick down $CONFIG_NAME"
-else
-    echo ""
-    echo -e "${CYAN}Connect:${NC} sudo wg-quick up $OUTPUT_FILE"
-    echo -e "${CYAN}Disconnect:${NC} sudo wg-quick down $OUTPUT_FILE"
-fi

@@ -116,19 +116,6 @@ When prompted, you can save configs to:
 2. **/etc/wireguard/** — Enables `sudo wg-quick up servername` (just the name!)
 3. **Custom path** — Any path you specify
 
-## Connecting
-
-```bash
-# If saved to /etc/wireguard/
-sudo wg-quick up ch369.nordvpn
-
-# If saved elsewhere
-sudo wg-quick up ./ch369.nordvpn.conf
-
-# Disconnect
-sudo wg-quick down ch369.nordvpn
-```
-
 ## Docker / Homelab
 
 These configs work great with containers that support WireGuard, like:

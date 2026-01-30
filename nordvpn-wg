@@ -395,15 +395,3 @@ else
 fi
 
 success "Config written to: $OUTPUT_FILE"
-
-# Show wg-quick commands
-if [[ "$OUTPUT_FILE" == /etc/wireguard/* ]]; then
-    CONFIG_NAME=$(basename "$OUTPUT_FILE" .conf)
-    echo ""
-    gum style --faint "Connect: sudo wg-quick up $CONFIG_NAME"
-    gum style --faint "Disconnect: sudo wg-quick down $CONFIG_NAME"
-else
-    echo ""
-    gum style --faint "Connect: sudo wg-quick up $OUTPUT_FILE"
-    gum style --faint "Disconnect: sudo wg-quick down $OUTPUT_FILE"
-fi
