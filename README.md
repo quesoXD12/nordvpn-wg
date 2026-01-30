@@ -29,19 +29,19 @@ The TUI version uses [charmbracelet/gum](https://github.com/charmbracelet/gum) f
 > Requires `gum`. If not installed, the script will offer to install it via `go install` (requires Go), or show manual installation instructions.
 
 ```bash
-curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg-gum
-chmod +x nordvpn-wg-gum
-sudo mv nordvpn-wg-gum /usr/local/bin/
+curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg
+chmod +x nordvpn-wg
+sudo mv nordvpn-wg /usr/local/bin/
 ```
 
-### Plain Bash Version (No Dependencies)
+### Vanilla Version (No Extra Dependencies)
 
 If you prefer no extra dependencies beyond `curl` and `jq`:
 
 ```bash
-curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg
-chmod +x nordvpn-wg
-sudo mv nordvpn-wg /usr/local/bin/
+curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg-vanilla
+chmod +x nordvpn-wg-vanilla
+sudo mv nordvpn-wg-vanilla /usr/local/bin/nordvpn-wg
 ```
 
 > [!TIP]
@@ -53,46 +53,46 @@ sudo mv nordvpn-wg /usr/local/bin/
 
 ```bash
 # Interactive mode (prompts for everything)
-nordvpn-wg-gum
-
-# With country filter
-nordvpn-wg-gum -c switzerland
-
-# Specific server
-nordvpn-wg-gum -s us9574
-```
-
-### Plain Bash Version
-
-```bash
-# Best recommended server
 nordvpn-wg
 
-# Country by code or name
-nordvpn-wg -c us
+# With country filter
 nordvpn-wg -c switzerland
-nordvpn-wg -c "united kingdom"
-
-# Interactive country picker (requires fzf)
-nordvpn-wg -i
 
 # Specific server
 nordvpn-wg -s us9574
+```
+
+### Vanilla Version
+
+```bash
+# Best recommended server
+nordvpn-wg-vanilla
+
+# Country by code or name
+nordvpn-wg-vanilla -c us
+nordvpn-wg-vanilla -c switzerland
+nordvpn-wg-vanilla -c "united kingdom"
+
+# Interactive country picker (requires fzf)
+nordvpn-wg-vanilla -i
+
+# Specific server
+nordvpn-wg-vanilla -s us9574
 
 # List all countries
-nordvpn-wg -l
+nordvpn-wg-vanilla -l
 ```
 
 ### Options
 
-| Flag                   | TUI        | Plain | Description                               |
-| ---------------------- | ---------- | ----- | ----------------------------------------- |
-| `-c, --country`        | ✅         | ✅    | Filter by country code or name            |
-| `-s, --server`         | ✅         | ✅    | Use specific server (e.g., `us9574`)      |
-| `-o, --output`         | ✅         | ✅    | Output file path (skips save prompt)      |
-| `-i, --interactive`    | (built-in) | ✅    | Interactive country picker (requires fzf) |
-| `-l, --list-countries` | (built-in) | ✅    | List all available countries              |
-| `-h, --help`           | ✅         | ✅    | Show help                                 |
+| Flag                   | TUI        | Vanilla | Description                               |
+| ---------------------- | ---------- | ------- | ----------------------------------------- |
+| `-c, --country`        | ✅         | ✅      | Filter by country code or name            |
+| `-s, --server`         | ✅         | ✅      | Use specific server (e.g., `us9574`)      |
+| `-o, --output`         | ✅         | ✅      | Output file path (skips save prompt)      |
+| `-i, --interactive`    | (built-in) | ✅      | Interactive country picker (requires fzf) |
+| `-l, --list-countries` | (built-in) | ✅      | List all available countries              |
+| `-h, --help`           | ✅         | ✅      | Show help                                 |
 
 ### Scripting (Fully Non-Interactive)
 
@@ -104,7 +104,7 @@ export NORDVPN_ACCESS_TOKEN="your-token"
 
 # Generate config without any prompts
 nordvpn-wg -c us -o /etc/wireguard/us.conf
-nordvpn-wg-gum -c switzerland -o ./swiss.conf
+nordvpn-wg-vanilla -c switzerland -o ./swiss.conf
 nordvpn-wg -s us9574 -o ~/vpn/specific-server.conf
 ```
 

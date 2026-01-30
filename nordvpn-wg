@@ -1,50 +1,23 @@
 #!/bin/bash
 set -euo pipefail
 
-# NordVPN WireGuard Config Generator
-# Generates a WireGuard configuration file using NordVPN's API
+# NordVPN WireGuard Config Generator (Gum Edition)
+# A beautiful TUI version using charmbracelet/gum
 #
-# Usage: ./generate-wireguard-config.sh [options] [output-file]
+# Usage: ./nordvpn-wg-gum [options] [output-file]
 #
 # Options:
 #   -c, --country COUNTRY   Filter by country code or name (e.g., us, switzerland)
-#   -s, --server SERVER     Use specific server (e.g., us9574, us9574.nordvpn.com)
-#   -i, --interactive       Interactive country selection using fzf (optional dependency)
-#   -l, --list-countries    List available countries with WireGuard support
+#   -s, --server SERVER     Use specific server (e.g., us9574)
 #   -h, --help              Show this help message
 #
 # Environment Variables:
 #   NORDVPN_ACCESS_TOKEN    Your NordVPN access token (required)
-#                           Get it from: https://my.nordaccount.com/dashboard/nordvpn/access-tokens/
-#
-# Examples:
-#   ./generate-wireguard-config.sh                          # Best recommended server
-#   ./generate-wireguard-config.sh -c us                    # Best US server
-#   ./generate-wireguard-config.sh -c switzerland           # By country name
-#   ./generate-wireguard-config.sh -i                       # Interactive fzf selection
-#   ./generate-wireguard-config.sh -s us9574                # Specific server
-#   ./generate-wireguard-config.sh -c de germany.conf       # German server, custom filename
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
-
-# Sanitize input for use in URLs (remove dangerous characters)
-sanitize_url_param() {
-    echo "$1" | tr -cd 'a-zA-Z0-9._-'
-}
 
 # Default values
 OUTPUT_FILE=""
 COUNTRY=""
 SERVER=""
-LIST_COUNTRIES=false
-INTERACTIVE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -57,48 +30,29 @@ while [[ $# -gt 0 ]]; do
             SERVER="${2:-}"
             shift 2
             ;;
-        -l|--list-countries)
-            LIST_COUNTRIES=true
-            shift
-            ;;
-        -i|--interactive)
-            INTERACTIVE=true
-            shift
-            ;;
         -o|--output)
             OUTPUT_FILE="${2:-}"
             shift 2
             ;;
         -h|--help)
-            echo "NordVPN WireGuard Config Generator"
+            echo "NordVPN WireGuard Config Generator (Gum Edition)"
             echo ""
-            echo "Usage: $0 [options] [output-file]"
+            echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
-            echo "  -c, --country COUNTRY   Filter by country code or name (e.g., us, switzerland)"
-            echo "  -s, --server SERVER     Use specific server (e.g., us9574, us9574.nordvpn.com)"
+            echo "  -c, --country COUNTRY   Filter by country code or name"
+            echo "  -s, --server SERVER     Use specific server (e.g., us9574)"
             echo "  -o, --output FILE       Output file path (skips save location prompt)"
-            echo "  -i, --interactive       Interactive country selection using fzf"
-            echo "  -l, --list-countries    List available countries with WireGuard support"
             echo "  -h, --help              Show this help message"
             echo ""
-            echo "Environment Variables:"
-            echo "  NORDVPN_ACCESS_TOKEN    Your NordVPN access token (required for config generation)"
-            echo ""
-            echo "Examples:"
-            echo "  $0                              # Best recommended server"
-            echo "  $0 -c us                        # Best US server"
-            echo "  $0 -c switzerland              # By country name"
-            echo "  $0 -i                           # Interactive fzf selection"
-            echo "  $0 -s us9574                    # Specific server us9574"
-            echo "  $0 -l                           # List all countries"
+            echo "If no options provided, launches interactive mode."
             echo ""
             echo "Scripting (fully non-interactive):"
             echo "  NORDVPN_ACCESS_TOKEN=xxx $0 -c us -o /etc/wireguard/us.conf"
             exit 0
             ;;
         -*)
-            echo -e "${RED}Error: Unknown option $1${NC}" >&2
+            echo "Error: Unknown option $1" >&2
             echo "Use --help for usage information."
             exit 1
             ;;
@@ -112,281 +66,298 @@ done
 # Check for required tools
 for cmd in curl jq; do
     if ! command -v "$cmd" &> /dev/null; then
-        echo -e "${RED}Error: '$cmd' is required but not installed.${NC}" >&2
+        echo "Error: '$cmd' is required but not installed." >&2
         exit 1
     fi
 done
 
-# Function to list available countries
-list_countries() {
-    echo -e "${BLUE}=== Countries with WireGuard Support ===${NC}"
-    echo ""
-    echo -e "${YELLOW}Fetching country list...${NC}"
-    
-    # Get all countries that have WireGuard servers
-    COUNTRIES=$(curl -sf "https://api.nordvpn.com/v1/servers/countries" | jq -r '.[] | "\(.code | ascii_downcase)\t\(.name)"' | sort)
-    
-    if [[ -z "$COUNTRIES" ]]; then
-        echo -e "${RED}Error: Failed to fetch country list.${NC}" >&2
-        exit 1
-    fi
-    
-    echo ""
-    echo -e "${BOLD}Code\tCountry${NC}"
-    echo "────────────────────────────────"
-    echo "$COUNTRIES" | while IFS=$'\t' read -r code name; do
-        printf "%-6s\t%s\n" "$code" "$name"
-    done
-    echo ""
-    echo -e "Use ${CYAN}-c <code>${NC} to select a country, e.g., ${CYAN}$0 -c us${NC}"
-    if command -v fzf &> /dev/null; then
-        echo -e "Or use ${CYAN}-i${NC} for interactive selection with fzf"
-    fi
+# Sanitize input for use in URLs (remove dangerous characters)
+sanitize_url_param() {
+    echo "$1" | tr -cd 'a-zA-Z0-9._-'
 }
 
-# Function for interactive country selection with fzf
-select_country_interactive() {
-    if ! command -v fzf &> /dev/null; then
-        echo -e "${RED}Error: fzf is not installed.${NC}" >&2
-        echo ""
-        echo "Install fzf for interactive selection:"
-        echo "  brew install fzf      # macOS"
-        echo "  apt install fzf       # Debian/Ubuntu"
-        echo "  pacman -S fzf         # Arch"
-        echo ""
-        echo "Or use -c <country> or -l to list countries."
-        exit 1
+# Check for gum
+check_gum() {
+    if command -v gum &> /dev/null; then
+        return 0
     fi
     
-    echo -e "${YELLOW}Fetching country list...${NC}" >&2
-    
-    COUNTRIES_JSON=$(curl -sf "https://api.nordvpn.com/v1/servers/countries")
-    
-    if [[ -z "$COUNTRIES_JSON" ]]; then
-        echo -e "${RED}Error: Failed to fetch country list.${NC}" >&2
-        exit 1
-    fi
-    
-    # Format: "code | Country Name" for fzf display
-    SELECTION=$(echo "$COUNTRIES_JSON" | \
-        jq -r '.[] | "\(.code | ascii_downcase) | \(.name)"' | \
-        sort -t'|' -k2 | \
-        fzf --height=20 --reverse --prompt="Select country: " --header="Code | Country")
-    
-    if [[ -z "$SELECTION" ]]; then
-        echo -e "${YELLOW}No country selected.${NC}" >&2
-        exit 0
-    fi
-    
-    # Extract the country code from selection
-    echo "${SELECTION%% |*}"
-}
-
-# Handle list countries (doesn't require token)
-if [[ "$LIST_COUNTRIES" == true ]]; then
-    list_countries
-    exit 0
-fi
-
-# Handle interactive mode
-if [[ "$INTERACTIVE" == true ]]; then
-    COUNTRY=$(select_country_interactive)
     echo ""
-fi
-
-# Check for access token (required for config generation)
-if [[ -z "${NORDVPN_ACCESS_TOKEN:-}" ]]; then
-    echo -e "${YELLOW}NORDVPN_ACCESS_TOKEN not set.${NC}"
-    echo ""
-    echo "Get your token from: https://my.nordaccount.com/dashboard/nordvpn/access-tokens/"
+    echo "┌─────────────────────────────────────────────────────────────┐"
+    echo "│  gum is not installed                                      │"
+    echo "│  https://github.com/charmbracelet/gum                      │"
+    echo "└─────────────────────────────────────────────────────────────┘"
     echo ""
     
-    # Check if we're in an interactive terminal
-    if [[ -t 0 ]]; then
-        echo -n "Enter your NordVPN access token: "
-        read -rs NORDVPN_ACCESS_TOKEN
-        echo ""  # newline after hidden input
-        
-        if [[ -z "$NORDVPN_ACCESS_TOKEN" ]]; then
-            echo -e "${RED}Error: No token provided.${NC}" >&2
-            exit 1
+    # Check if go is available
+    if command -v go &> /dev/null; then
+        echo -n "Would you like to install gum with Go? [y/N] "
+        read -r response
+        if [[ "$response" =~ ^[Yy]$ ]]; then
+            echo "Installing gum..."
+            go install github.com/charmbracelet/gum@latest
+            
+            # Check if it worked
+            if command -v gum &> /dev/null; then
+                echo "✓ gum installed successfully!"
+                return 0
+            else
+                echo ""
+                echo "gum was installed but not found in PATH."
+                echo "Make sure $(go env GOPATH)/bin is in your PATH."
+                echo ""
+                echo "Add this to your shell profile:"
+                echo "  export PATH=\"\$PATH:\$(go env GOPATH)/bin\""
+                exit 1
+            fi
         fi
-        
-        echo ""
-        echo -e "${CYAN}Tip:${NC} To skip this prompt, run:"
-        echo "  export NORDVPN_ACCESS_TOKEN=\"your-token-here\""
-        echo ""
-    else
-        echo -e "${RED}Error: No token provided and not in interactive mode.${NC}" >&2
-        echo "Set the environment variable: export NORDVPN_ACCESS_TOKEN=\"your-token\""
+    fi
+    
+    echo ""
+    echo "Install gum using one of these methods:"
+    echo ""
+    echo "  # macOS / Linux (Homebrew)"
+    echo "  brew install gum"
+    echo ""
+    echo "  # Arch Linux"
+    echo "  pacman -S gum"
+    echo ""
+    echo "  # Debian/Ubuntu"
+    echo "  sudo mkdir -p /etc/apt/keyrings"
+    echo "  curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg"
+    echo "  echo \"deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *\" | sudo tee /etc/apt/sources.list.d/charm.list"
+    echo "  sudo apt update && sudo apt install gum"
+    echo ""
+    echo "  # Go"
+    echo "  go install github.com/charmbracelet/gum@latest"
+    echo ""
+    echo "See: https://github.com/charmbracelet/gum#installation"
+    exit 1
+}
+
+check_gum
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GUM UI HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+header() {
+    gum style \
+        --foreground 212 --border-foreground 212 --border double \
+        --align center --width 50 --margin "1 2" --padding "1 2" \
+        'NordVPN WireGuard Config Generator'
+}
+
+success() {
+    gum style --foreground 82 "✓ $1"
+}
+
+error() {
+    gum style --foreground 196 "✗ $1"
+}
+
+info() {
+    gum style --foreground 81 "→ $1"
+}
+
+spin() {
+    gum spin --spinner dot --title "$1" -- "$2"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN LOGIC
+# ═══════════════════════════════════════════════════════════════════════════════
+
+header
+
+# Get access token
+if [[ -z "${NORDVPN_ACCESS_TOKEN:-}" ]]; then
+    gum style --foreground 214 "NORDVPN_ACCESS_TOKEN not set"
+    echo ""
+    gum style --faint "Get your token from:"
+    gum style --foreground 81 --underline "https://my.nordaccount.com/dashboard/nordvpn/access-tokens/"
+    echo ""
+    
+    NORDVPN_ACCESS_TOKEN=$(gum input --placeholder "Paste your access token here" --password)
+    
+    if [[ -z "$NORDVPN_ACCESS_TOKEN" ]]; then
+        error "No token provided"
         exit 1
     fi
+    
+    echo ""
+    gum style --faint "Tip: export NORDVPN_ACCESS_TOKEN=\"...\" to skip this prompt"
+    echo ""
 fi
-
-echo -e "${BLUE}=== NordVPN WireGuard Config Generator ===${NC}"
-echo ""
 
 # Step 1: Get private key
-echo -e "${YELLOW}[1/3]${NC} Fetching your WireGuard private key..."
 PRIVATE_KEY=$(curl -sf -u "token:${NORDVPN_ACCESS_TOKEN}" \
-    "https://api.nordvpn.com/v1/users/services/credentials" \
-    | jq -r '.nordlynx_private_key')
+    'https://api.nordvpn.com/v1/users/services/credentials' | jq -r '.nordlynx_private_key')
 
 if [[ -z "$PRIVATE_KEY" || "$PRIVATE_KEY" == "null" ]]; then
-    echo -e "${RED}Error: Failed to retrieve private key. Check your access token.${NC}" >&2
+    error "Failed to retrieve private key. Check your access token."
     exit 1
 fi
-echo -e "${GREEN}  ✓ Private key retrieved${NC}"
+success "Private key retrieved"
 
-# Step 2: Get server info
-echo -e "${YELLOW}[2/3]${NC} Finding WireGuard server..."
+# Step 2: Get server
+if [[ -z "$SERVER" && -z "$COUNTRY" ]]; then
+    # Interactive mode - let user choose
+    echo ""
+    MODE=$(gum choose --header "How would you like to select a server?" \
+        "🌐 Best recommended (automatic)" \
+        "🗺️  Choose country" \
+        "🎯 Specific server")
+    
+    case "$MODE" in
+        *"Best recommended"*)
+            # Will use default (no filter)
+            ;;
+        *"Choose country"*)
+            info "Fetching country list..."
+            COUNTRIES_JSON=$(curl -sf "https://api.nordvpn.com/v1/servers/countries")
+            
+            # Build a list for gum choose
+            COUNTRY_LIST=$(echo "$COUNTRIES_JSON" | jq -r '.[] | "\(.name) (\(.code | ascii_downcase))"' | sort)
+            
+            echo ""
+            SELECTED=$(echo "$COUNTRY_LIST" | gum filter --placeholder "Search countries..." --height 15)
+            
+            if [[ -z "$SELECTED" ]]; then
+                error "No country selected"
+                exit 1
+            fi
+            
+            # Extract country code from selection like "Switzerland (ch)"
+            COUNTRY=$(echo "$SELECTED" | grep -oP '\(\K[a-z]+(?=\))')
+            ;;
+        *"Specific server"*)
+            echo ""
+            SERVER=$(gum input --placeholder "Server name (e.g., us9574)")
+            if [[ -z "$SERVER" ]]; then
+                error "No server specified"
+                exit 1
+            fi
+            ;;
+    esac
+fi
+
+# Fetch server info
+info "Finding WireGuard server..."
 
 if [[ -n "$SERVER" ]]; then
-    # Specific server requested
-    # Clean up server name (remove .nordvpn.com if present)
     SERVER_NAME=$(sanitize_url_param "${SERVER%.nordvpn.com}")
-    
-    echo -e "    Looking for server: ${CYAN}${SERVER_NAME}${NC}"
+    info "Looking for server: $SERVER_NAME"
     
     SERVER_INFO=$(curl -sfg \
         "https://api.nordvpn.com/v1/servers?filters%5Bservers_technologies%5D%5Bidentifier%5D=wireguard_udp&filters%5Bhostname%5D=${SERVER_NAME}" \
         2>/dev/null || echo "[]")
     
     if [[ "$SERVER_INFO" == "[]" || -z "$SERVER_INFO" ]]; then
-        echo -e "${RED}Error: Server '${SERVER_NAME}' not found or doesn't support WireGuard.${NC}" >&2
-        echo ""
-        echo "Tips:"
-        echo "  - Use just the server name without domain (e.g., 'us9574' not 'us9574.nordvpn.com')"
-        echo "  - Make sure the server supports WireGuard/NordLynx"
-        echo "  - Use -l to list available countries, then pick a recommended server"
+        error "Server '$SERVER_NAME' not found or doesn't support WireGuard"
         exit 1
     fi
 elif [[ -n "$COUNTRY" ]]; then
-    # Country filter requested - supports both codes (us, ch) and names (switzerland)
     COUNTRY_LOWER=$(echo "$COUNTRY" | tr '[:upper:]' '[:lower:]')
     
-    # Fetch countries list once
     COUNTRIES_JSON=$(curl -sf "https://api.nordvpn.com/v1/servers/countries")
     
-    # Sanitize country input for jq (escape quotes and backslashes)
+    # Sanitize country input for jq
     COUNTRY_SAFE=$(echo "$COUNTRY_LOWER" | sed 's/\\/\\\\/g; s/"/\\"/g')
     
-    # Try matching by code first, then by name (partial match)
-    COUNTRY_ID=$(echo "$COUNTRIES_JSON" | \
-        jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.code | ascii_downcase == $c) | .id')
+    # Try matching by code first
+    COUNTRY_ID=$(echo "$COUNTRIES_JSON" | jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.code | ascii_downcase == $c) | .id')
     
     if [[ -z "$COUNTRY_ID" ]]; then
-        # Try matching by country name (case-insensitive, partial match)
-        MATCHING_COUNTRIES=$(echo "$COUNTRIES_JSON" | \
-            jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.name | ascii_downcase | contains($c)) | "\(.code | ascii_downcase)\t\(.name)"')
-        
-        if [[ -z "$MATCHING_COUNTRIES" ]]; then
-            MATCH_COUNT=0
-        else
-            MATCH_COUNT=$(echo "$MATCHING_COUNTRIES" | wc -l)
-        fi
+        # Try by name
+        MATCHING=$(echo "$COUNTRIES_JSON" | jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.name | ascii_downcase | contains($c))')
+        MATCH_COUNT=$(echo "$MATCHING" | jq -s 'length')
         
         if [[ "$MATCH_COUNT" -eq 0 ]]; then
-            echo -e "${RED}Error: Country '${COUNTRY}' not found.${NC}" >&2
-            echo ""
-            echo "Use -l to list available countries, or try:"
-            echo "  - 2-letter code: -c ch"
-            echo "  - Full name: -c switzerland"
-            echo "  - Partial name: -c switz"
+            error "Country '$COUNTRY' not found"
             exit 1
         elif [[ "$MATCH_COUNT" -gt 1 ]]; then
-            echo -e "${YELLOW}Multiple countries match '${COUNTRY}':${NC}" >&2
+            gum style --foreground 214 "Multiple countries match '$COUNTRY':"
             echo ""
-            echo "$MATCHING_COUNTRIES" | while IFS=$'\t' read -r code name; do
-                echo "  -c $code  ($name)"
-            done
+            echo "$COUNTRIES_JSON" | jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.name | ascii_downcase | contains($c)) | "  \(.code | ascii_downcase)  \(.name)"'
             echo ""
-            echo "Please be more specific or use the 2-letter code."
+            gum style --faint "Please be more specific or use the 2-letter code."
             exit 1
         fi
         
-        # Single match - extract the ID
-        COUNTRY_ID=$(echo "$COUNTRIES_JSON" | \
-            jq -r --arg c "$COUNTRY_SAFE" '.[] | select(.name | ascii_downcase | contains($c)) | .id')
+        COUNTRY_ID=$(echo "$MATCHING" | jq -r '.id')
     fi
     
-    COUNTRY_NAME=$(echo "$COUNTRIES_JSON" | \
-        jq -r ".[] | select(.id == ${COUNTRY_ID}) | .name")
-    
-    echo -e "    Filtering by country: ${CYAN}${COUNTRY_NAME}${NC}"
+    COUNTRY_NAME=$(echo "$COUNTRIES_JSON" | jq -r ".[] | select(.id == ${COUNTRY_ID}) | .name")
+    info "Filtering by country: $COUNTRY_NAME"
     
     SERVER_INFO=$(curl -sfg \
         "https://api.nordvpn.com/v1/servers/recommendations?filters%5Bservers_technologies%5D%5Bidentifier%5D=wireguard_udp&filters%5Bcountry_id%5D=${COUNTRY_ID}&limit=1")
 else
-    # No filter, get best recommended
-    echo -e "    Getting best recommended server..."
-    SERVER_INFO=$(curl -sfg \
-        "https://api.nordvpn.com/v1/servers/recommendations?filters%5Bservers_technologies%5D%5Bidentifier%5D=wireguard_udp&limit=1")
+    SERVER_INFO=$(gum spin --spinner dot --title "Finding best recommended server..." -- \
+        curl -sfg "https://api.nordvpn.com/v1/servers/recommendations?filters%5Bservers_technologies%5D%5Bidentifier%5D=wireguard_udp&limit=1")
 fi
 
 if [[ -z "$SERVER_INFO" || "$SERVER_INFO" == "[]" ]]; then
-    echo -e "${RED}Error: Failed to get server information.${NC}" >&2
+    error "Failed to get server information"
     exit 1
 fi
 
 # Extract server details
-HOSTNAME=$(echo "$SERVER_INFO" | jq -r '.[0].hostname // .[0].hostname')
-ENDPOINT=$(echo "$SERVER_INFO" | jq -r '.[0].station // .[0].station')
+HOSTNAME=$(echo "$SERVER_INFO" | jq -r '.[0].hostname')
+ENDPOINT=$(echo "$SERVER_INFO" | jq -r '.[0].station')
 CITY=$(echo "$SERVER_INFO" | jq -r '.[0].locations[0].country.city.name // "Unknown"')
 COUNTRY_NAME=$(echo "$SERVER_INFO" | jq -r '.[0].locations[0].country.name // "Unknown"')
 PUBLIC_KEY=$(echo "$SERVER_INFO" | jq -r '.[0].technologies[] | select(.identifier == "wireguard_udp") | .metadata[] | select(.name == "public_key") | .value')
 LOAD=$(echo "$SERVER_INFO" | jq -r '.[0].load // "?"')
 
 if [[ -z "$PUBLIC_KEY" || "$PUBLIC_KEY" == "null" ]]; then
-    echo -e "${RED}Error: Could not extract WireGuard public key from server.${NC}" >&2
+    error "Could not extract WireGuard public key from server"
     exit 1
 fi
 
-echo -e "${GREEN}  ✓ Found server: ${HOSTNAME}${NC}"
-echo -e "    Location: ${CITY}, ${COUNTRY_NAME}"
-echo -e "    Endpoint: ${ENDPOINT}:51820"
-echo -e "    Current load: ${LOAD}%"
+success "Found server: $HOSTNAME"
+
+echo ""
+gum style --border normal --padding "0 1" --border-foreground 240 \
+    "$(gum style --foreground 82 "Server:") $HOSTNAME" \
+    "$(gum style --foreground 82 "Location:") $CITY, $COUNTRY_NAME" \
+    "$(gum style --foreground 82 "Endpoint:") $ENDPOINT:51820" \
+    "$(gum style --foreground 82 "Load:") ${LOAD}%"
 
 # Set output filename
 DEFAULT_FILENAME="${HOSTNAME%.com}.conf"
 
 if [[ -z "$OUTPUT_FILE" ]]; then
     echo ""
-    echo -e "${BOLD}Where would you like to save the config?${NC}"
-    echo "  1) Current directory (./$DEFAULT_FILENAME)"
-    echo "  2) /etc/wireguard/ (system-wide, requires sudo)"
-    echo "  3) Custom path"
-    echo ""
-    echo -n "Choice [1]: "
-    read -r SAVE_CHOICE
-    SAVE_CHOICE="${SAVE_CHOICE:-1}"
+    SAVE_LOCATION=$(gum choose --header "Where would you like to save the config?" \
+        "📁 Current directory (./$DEFAULT_FILENAME)" \
+        "🔧 /etc/wireguard/ (system-wide, requires sudo)" \
+        "📝 Custom path")
     
-    case "$SAVE_CHOICE" in
-        1)
+    case "$SAVE_LOCATION" in
+        *"Current directory"*)
             OUTPUT_FILE="./$DEFAULT_FILENAME"
             ;;
-        2)
+        *"/etc/wireguard"*)
             OUTPUT_FILE="/etc/wireguard/$DEFAULT_FILENAME"
             USE_SUDO=true
             ;;
-        3)
-            echo -n "Enter full path: "
-            read -r OUTPUT_FILE
+        *"Custom"*)
+            OUTPUT_FILE=$(gum input --placeholder "Enter full path (e.g., ~/vpn/nordvpn.conf)" --value "$DEFAULT_FILENAME")
             if [[ -z "$OUTPUT_FILE" ]]; then
-                echo -e "${RED}Error: No path provided.${NC}" >&2
+                error "No path provided"
                 exit 1
             fi
             # Expand ~ to home directory
             OUTPUT_FILE="${OUTPUT_FILE/#\~/$HOME}"
             ;;
-        *)
-            OUTPUT_FILE="./$DEFAULT_FILENAME"
-            ;;
     esac
 fi
 
 # Step 3: Generate config
-echo -e "${YELLOW}[3/3]${NC} Generating WireGuard config..."
+echo ""
+info "Generating WireGuard config..."
 
 CONFIG_CONTENT="# NordVPN WireGuard Configuration
 # Server: ${HOSTNAME}
@@ -423,16 +394,16 @@ else
     chmod 600 "$OUTPUT_FILE"
 fi
 
-echo -e "${GREEN}  ✓ Config written to: ${OUTPUT_FILE}${NC}"
+success "Config written to: $OUTPUT_FILE"
 
 # Show wg-quick commands
 if [[ "$OUTPUT_FILE" == /etc/wireguard/* ]]; then
     CONFIG_NAME=$(basename "$OUTPUT_FILE" .conf)
     echo ""
-    echo -e "${CYAN}Connect:${NC} sudo wg-quick up $CONFIG_NAME"
-    echo -e "${CYAN}Disconnect:${NC} sudo wg-quick down $CONFIG_NAME"
+    gum style --faint "Connect: sudo wg-quick up $CONFIG_NAME"
+    gum style --faint "Disconnect: sudo wg-quick down $CONFIG_NAME"
 else
     echo ""
-    echo -e "${CYAN}Connect:${NC} sudo wg-quick up $OUTPUT_FILE"
-    echo -e "${CYAN}Disconnect:${NC} sudo wg-quick down $OUTPUT_FILE"
+    gum style --faint "Connect: sudo wg-quick up $OUTPUT_FILE"
+    gum style --faint "Disconnect: sudo wg-quick down $OUTPUT_FILE"
 fi
